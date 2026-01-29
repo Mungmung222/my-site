@@ -181,13 +181,11 @@ textarea{min-height:80px; resize: none;}
   flex-grow: 1;
 }
 
-/* 마우스 호버 효과 */
 .option-item:hover {
   background: var(--pink-soft);
   border-color: var(--pink);
 }
 
-/* 선택되었을 때 효과 */
 .option-item:has(input:checked) {
   background: var(--pink-soft);
   border-color: var(--pink);
@@ -198,6 +196,42 @@ textarea{min-height:80px; resize: none;}
   width: auto;
   margin: 0;
   cursor: pointer;
+}
+
+/* 기타 입력란 디자인 */
+.etc-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f8f8f8;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+.etc-wrap:focus-within {
+    background: var(--pink-soft);
+    border-color: var(--pink);
+}
+.etc-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+    white-space: nowrap;
+}
+.etc-input {
+    border: none;
+    background: transparent;
+    border-bottom: 1.5px solid #ccc;
+    border-radius: 0;
+    padding: 2px 5px;
+    font-size: 14px;
+    width: 100%;
+}
+.etc-input:focus {
+    border-bottom-color: var(--pink);
+    outline: none;
 }
 
 /* 하단 */
@@ -273,7 +307,7 @@ textarea{min-height:80px; resize: none;}
 
       <div class="card" data-required>
         <div class="card-header" onclick="toggle(this)">
-          <div class="title">표정 갯수<span class="required">*</span></div>
+          <div class="title">표정 갯수(추가금)<span class="required">*</span></div>
           <span class="check">✔</span>
           <span class="arrow">▼</span>
         </div>
@@ -297,16 +331,22 @@ textarea{min-height:80px; resize: none;}
 
       <div class="card">
         <div class="card-header" onclick="toggle(this)">
-          <div class="title">추가 옵션</div>
+          <div class="title">추가 옵션(추가금)</div>
           <span class="arrow">▼</span>
         </div>
-        <div class="card-body option-flex">
-          <label class="option-item"><input type="checkbox">동물 귀 물리</label>
-          <label class="option-item"><input type="checkbox">아이템 추가</label>
-          <label class="option-item"><input type="checkbox">의상 추가</label>
-          <label class="option-item"><input type="checkbox">헤어 추가</label>
-          <label class="option-item"><input type="checkbox">Vbridger 추가</label>
-          <label class="option-item"><input type="checkbox">저작권 cmo 파일</label>
+        <div class="card-body">
+          <div class="option-flex">
+            <label class="option-item"><input type="checkbox">동물 귀 물리</label>
+            <label class="option-item"><input type="checkbox">아이템 추가</label>
+            <label class="option-item"><input type="checkbox">의상 추가</label>
+            <label class="option-item"><input type="checkbox">헤어 추가</label>
+            <label class="option-item"><input type="checkbox">Vbridger 추가</label>
+            <label class="option-item"><input type="checkbox">저작권 cmo 파일</label>
+          </div>
+          <div class="etc-wrap">
+            <span class="etc-label">기타 :</span>
+            <input type="text" class="etc-input" placeholder="직접 입력">
+          </div>
         </div>
       </div>
 
@@ -322,7 +362,7 @@ textarea{min-height:80px; resize: none;}
 
       <div class="card">
         <div class="card-header" onclick="toggle(this)">
-          <div class="title">빠른 마감</div>
+          <div class="title">빠른 마감(추가금)</div>
           <span class="arrow">▼</span>
         </div>
         <div class="card-body option-flex">
@@ -332,13 +372,13 @@ textarea{min-height:80px; resize: none;}
 
       <div class="card" data-required>
         <div class="card-header" onclick="toggle(this)">
-          <div class="title">샘플 공개 여부<span class="required">*</span></div>
+          <div class="title">샘플 공개 여부(추가금)<span class="required">*</span></div>
           <span class="check">✔</span>
           <span class="arrow">▼</span>
         </div>
         <div class="card-body option-flex" onchange="checkCard(this)">
           <label class="option-item"><input type="radio" name="sample">허용</label>
-          <label class="option-item"><input type="radio" name="sample">비공개</label>
+          <label class="option-item"><input type="radio" name="sample">비공개(추가금 발생)</label>
         </div>
       </div>
 
@@ -353,12 +393,10 @@ textarea{min-height:80px; resize: none;}
 </div>
 
 <script>
-// 카드 열기/닫기
 function toggle(el){
   el.parentElement.classList.toggle('closed');
 }
 
-// 개별 카드 입력 체크
 function checkCard(el){
   const card = el.closest('.card');
   if(!card || !card.hasAttribute('data-required')) return;
@@ -383,7 +421,6 @@ function checkCard(el){
   updateProgress();
 }
 
-// 작성률 업데이트
 function updateProgress(){
   const requiredCards = document.querySelectorAll('.card[data-required]');
   const completedCards = document.querySelectorAll('.card[data-required].completed');
@@ -392,14 +429,13 @@ function updateProgress(){
   document.getElementById('progressText').textContent = `작성률 ${percent}%`;
 }
 
-// 유효성 검사 (저장 전)
 function validate(){
   let ok = true;
   document.querySelectorAll('.card[data-required]').forEach(card=>{
     if(!card.classList.contains('completed')){
       ok = false;
       card.classList.add('invalid');
-      card.classList.remove('closed'); // 미입력 카드는 펼침
+      card.classList.remove('closed');
       setTimeout(()=>card.classList.remove('invalid'), 400);
     }
   });
@@ -407,29 +443,27 @@ function validate(){
   return ok;
 }
 
-// 이미지 저장
 function saveImage(){
   if(!validate()) return;
   const area = document.getElementById('captureArea');
   area.classList.add('capture');
-  html2canvas(area,{scale:2}).then(canvas=>{
+  html2canvas(area,{scale:2, useCORS: true}).then(canvas=>{
     const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = '주문서_' + new Date().getTime() + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.download = '비모_주문서_' + new Date().getTime() + '.png';
     a.click();
     area.classList.remove('capture');
   });
 }
 
-// PDF 저장
 function savePDF(){
   if(!validate()) return;
   const area = document.getElementById('captureArea');
   area.classList.add('capture');
   html2pdf().set({
     margin:6,
-    filename:'주문서.pdf',
-    html2canvas:{scale:2},
+    filename:'비모_주문서.pdf',
+    html2canvas:{scale:2, useCORS: true},
     jsPDF:{unit:'mm',format:'a4'}
   }).from(area).save().then(()=>{
     area.classList.remove('capture');
