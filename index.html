@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주문서 작성</title>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script> 
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+
+<style>
+:root{
+  --pink:#ff6fa1;
+  --pink-soft:#fff2f7;
+  --border:#ffd1e1;
+  --danger:#ff4d6d;
+  --success:#2ecc71;
+}
+
+*{
+  box-sizing:border-box;
+  word-break:keep-all;
+}
+
+body{
+  margin:0;
+  font-family:Pretendard, system-ui;
+  background:#f9f9f9;
+}
+
+.frame{
+  max-width:1100px;
+  margin:20px auto;
+  border-radius:22px;
+  background:#fff;
+  box-shadow:0 12px 40px rgba(255,120,160,.18);
+  overflow: hidden;
+}
+
+.frame.capture{
+  box-shadow:none;
+  margin:0;
+}
+
+/* 헤더 */
+.header{
+  padding:22px;
+  background:var(--pink-soft);
+  font-weight:700;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-box {
+  text-align: right;
+}
+
+.progress{
+  font-size:16px;
+  color:var(--pink);
+  font-weight:800;
+}
+
+/* 본문 */
+.scroll{padding:20px;}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+@media(max-width:768px){
+  .grid{grid-template-columns:1fr;}
+}
+
+/* 카드 */
+.card{
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  transition:.2s;
+  background: #fff;
+}
+.card:hover{
+  box-shadow:0 6px 20px rgba(255,120,160,.1);
+}
+
+.card.invalid{
+  border-color:var(--danger);
+  animation:shake .35s;
+}
+@keyframes shake{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  50%{transform:translateX(4px)}
+  75%{transform:translateX(-4px)}
+  100%{transform:translateX(0)}
+}
+
+.card-header{
+  background:var(--pink-soft);
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.title{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  white-space:nowrap;
+}
+
+.required{
+  color:var(--danger);
+  font-size:12px;
+}
+
+.check{
+  margin-left:6px;
+  color:var(--success);
+  opacity: 0;
+  transition: .2s;
+}
+.card.completed .check {
+  opacity: 1;
+}
+
+.arrow{
+  margin-left:auto;
+  color:var(--pink);
+  font-size:14px;
+  transition:.2s;
+}
+
+.card.closed .card-body{display:none;}
+.card.closed .arrow{transform:rotate(-90deg);}
+
+.card-body{
+  padding:16px;
+}
+
+/* 입력 */
+input, textarea{
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid #eee;
+  font-size:14px;
+  outline-color: var(--pink);
+  transition: .2s;
+}
+input:focus, textarea:focus {
+  border-color: var(--pink);
+}
+textarea{min-height:80px; resize: none;}
+
+/* 옵션 */
+.option-flex{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.option-item{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f8f8f8;
+  font-size:14px;
+  cursor: pointer;
+  transition: .2s;
+  border: 1px solid transparent;
+  flex-grow: 1;
+}
+
+/* 마우스 호버 효과 */
+.option-item:hover {
+  background: var(--pink-soft);
+  border-color: var(--pink);
+}
+
+/* 선택되었을 때 효과 */
+.option-item:has(input:checked) {
+  background: var(--pink-soft);
+  border-color: var(--pink);
+  font-weight: bold;
+}
+
+.option-item input{
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* 하단 */
+.footer{
+  padding:16px;
+  border-top:1px solid #eee;
+  display:flex;
+  gap:10px;
+  background: #fff;
+}
+.footer button{
+  flex:1;
+  padding:16px;
+  border:none;
+  border-radius:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition: .2s;
+}
+.btn-img{background:var(--pink);color:#fff;}
+.btn-img:hover{background:#e65a8e;}
+.btn-pdf{background:#333;color:#fff;}
+.btn-pdf:hover{background:#000;}
+</style>
+</head>
+
+<body>
+
+<div class="frame" id="captureArea">
+
+  <div class="header">
+    <span>주문서 작성</span>
+    <div class="progress-box">
+        <span class="progress" id="progressText">작성률 0%</span>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="grid">
+
+      <div class="card" data-required>
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">닉네임<span class="required">*</span></div>
+          <span class="check">✔</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body">
+          <input oninput="checkCard(this)" placeholder="방송용 닉네임">
+        </div>
+      </div>
+
+      <div class="card" data-required>
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">방송 주소<span class="required">*</span></div>
+          <span class="check">✔</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body">
+          <input oninput="checkCard(this)" placeholder="URL">
+        </div>
+      </div>
+
+      <div class="card" data-required>
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">캐릭터 설명<span class="required">*</span></div>
+          <span class="check">✔</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body">
+          <textarea oninput="checkCard(this)" placeholder="외형, 설정 등"></textarea>
+        </div>
+      </div>
+
+      <div class="card" data-required>
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">표정 갯수<span class="required">*</span></div>
+          <span class="check">✔</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body">
+          <input type="number" oninput="checkCard(this)" placeholder="기본 외 추가 표정 개수">
+        </div>
+      </div>
+
+      <div class="card" data-required>
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">타입<span class="required">*</span></div>
+          <span class="check">✔</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body option-flex" onchange="checkCard(this)">
+          <label class="option-item"><input type="radio" name="type">흉상</label>
+          <label class="option-item"><input type="radio" name="type">반신</label>
+          <label class="option-item"><input type="radio" name="type">전신</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">추가 옵션</div>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body option-flex">
+          <label class="option-item"><input type="checkbox">동물 귀 물리</label>
+          <label class="option-item"><input type="checkbox">아이템 추가</label>
+          <label class="option-item"><input type="checkbox">의상 추가</label>
+          <label class="option-item"><input type="checkbox">헤어 추가</label>
+          <label class="option-item"><input type="checkbox">Vbridger 추가</label>
+          <label class="option-item"><input type="checkbox">저작권 cmo 파일</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">특이사항</div>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body">
+          <textarea placeholder="기타 요구 사항"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">빠른 마감</div>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body option-flex">
+          <label class="option-item"><input type="checkbox">빠른 마감 요청</label>
+        </div>
+      </div>
+
+      <div class="card" data-required>
+        <div class="card-header" onclick="toggle(this)">
+          <div class="title">샘플 공개 여부<span class="required">*</span></div>
+          <span class="check">✔</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="card-body option-flex" onchange="checkCard(this)">
+          <label class="option-item"><input type="radio" name="sample">허용</label>
+          <label class="option-item"><input type="radio" name="sample">비공개</label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="btn-img" onclick="saveImage()">이미지 저장</button>
+    <button class="btn-pdf" onclick="savePDF()">PDF 저장</button>
+  </div>
+
+</div>
+
+<script>
+// 카드 열기/닫기
+function toggle(el){
+  el.parentElement.classList.toggle('closed');
+}
+
+// 개별 카드 입력 체크
+function checkCard(el){
+  const card = el.closest('.card');
+  if(!card || !card.hasAttribute('data-required')) return;
+
+  let filled = false;
+  const inputs = card.querySelectorAll('input, textarea');
+  
+  inputs.forEach(i => {
+    if(i.type === 'radio' || i.type === 'checkbox') {
+      if(i.checked) filled = true;
+    } else {
+      if(i.value.trim().length > 0) filled = true;
+    }
+  });
+
+  if(filled) {
+    card.classList.add('completed');
+  } else {
+    card.classList.remove('completed');
+  }
+  
+  updateProgress();
+}
+
+// 작성률 업데이트
+function updateProgress(){
+  const requiredCards = document.querySelectorAll('.card[data-required]');
+  const completedCards = document.querySelectorAll('.card[data-required].completed');
+  
+  const percent = Math.round((completedCards.length / requiredCards.length) * 100);
+  document.getElementById('progressText').textContent = `작성률 ${percent}%`;
+}
+
+// 유효성 검사 (저장 전)
+function validate(){
+  let ok = true;
+  document.querySelectorAll('.card[data-required]').forEach(card=>{
+    if(!card.classList.contains('completed')){
+      ok = false;
+      card.classList.add('invalid');
+      card.classList.remove('closed'); // 미입력 카드는 펼침
+      setTimeout(()=>card.classList.remove('invalid'), 400);
+    }
+  });
+  if(!ok) alert('필수 항목(*)을 모두 입력해주세요.');
+  return ok;
+}
+
+// 이미지 저장
+function saveImage(){
+  if(!validate()) return;
+  const area = document.getElementById('captureArea');
+  area.classList.add('capture');
+  html2canvas(area,{scale:2}).then(canvas=>{
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = '주문서_' + new Date().getTime() + '.png';
+    a.click();
+    area.classList.remove('capture');
+  });
+}
+
+// PDF 저장
+function savePDF(){
+  if(!validate()) return;
+  const area = document.getElementById('captureArea');
+  area.classList.add('capture');
+  html2pdf().set({
+    margin:6,
+    filename:'주문서.pdf',
+    html2canvas:{scale:2},
+    jsPDF:{unit:'mm',format:'a4'}
+  }).from(area).save().then(()=>{
+    area.classList.remove('capture');
+  });
+}
+</script>
+
+</body>
+</html>
